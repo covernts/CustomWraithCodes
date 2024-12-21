@@ -12,7 +12,8 @@
 	"developer": "covernts",
 	"description": "Add custom codes to The Wraith.",
 	"links": {
-		"source": "https://github.com/covernts/CustomWraithCodes"
+		"source": "https://github.com/covernts/CustomWraithCodes",
+		"community": "https://discord.gg/DWEpExDVWs"
 	},
 	"settings": {
 		"reward-type": {
