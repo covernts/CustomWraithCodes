@@ -14,7 +14,12 @@ const char* getStatId(SpecialRewardItem type) {
 		case SpecialRewardItem::GoldKey: return "43";
 		default: return "0";
 	}
-};
+}
+
+std::string removeSpaces(std::string input) {
+	input.erase(std::remove(input.begin(), input.end(), ' '), input.end());
+	return input;
+}
 
 GJRewardObject* create_reward(std::string type, int64_t amount) {
 	auto gsm = GameStatsManager::sharedState();
@@ -39,12 +44,18 @@ GJRewardObject* create_reward(std::string type, int64_t amount) {
 	}
 	
 	return obj;
-};
+}
 
 class $modify(CustomWraithCodes, SecretLayer5) {
 	struct Fields {
 		std::string text = "";
 	};
+
+	static void onModify(auto& self) {
+		if (!self.setHookPriorityPre("SecretLayer5::onlineRewardStatusFailed", Priority::First)) {
+			log::error("Error setting hook priority for: SecretLayer5::onlineRewardStatusFailed");
+		}
+	}
 
 	bool init() {
 		if (!SecretLayer5::init()) return false;
@@ -64,15 +75,37 @@ class $modify(CustomWraithCodes, SecretLayer5) {
 		SecretLayer5::onSubmit(sender);
 	}
 
-	void show_success() {
+    void onlineRewardStatusFailed() {
+        auto code = removeSpaces(utils::string::toLower(Mod::get()->getSettingValue<std::string>("code")));
+		
+		if (removeSpaces(m_fields->text) == code) {
+			auto sequence = CCSequence::create(
+				CCDelayTime::create(4),
+				CCCallFunc::create(this, callfunc_selector(CustomWraithCodes::showSuccess_W)),
+				CCDelayTime::create(1),
+				CCCallFunc::create(this, callfunc_selector(CustomWraithCodes::fadeLoadingCircle_W)),
+				CCCallFunc::create(this, callfunc_selector(CustomWraithCodes::showReward_W)),
+				nullptr
+			);
+
+			CCDirector::sharedDirector()->getRunningScene()->runAction(sequence);
+
+			this->m_wraithButton->setEnabled(true);
+		} else {
+			SecretLayer5::onlineRewardStatusFailed();
+		}
+	}
+
+	// Wrappers
+    void showSuccess_W() {
 		this->showSuccessAnimation();
 	}
 
-	void fade_loading() {
+	void fadeLoadingCircle_W() {
 		this->m_circleSprite->fadeInCircle(false, 0.5f, 0.f);
 	}
 
-	void show_reward() {
+	void showReward_W() {
 		auto gsm = GameStatsManager::sharedState();
 		
 		auto type = Mod::get()->getSettingValue<std::string>("reward-type");
@@ -96,27 +129,6 @@ class $modify(CustomWraithCodes, SecretLayer5) {
 				gsm->incrementStat(getStatId(rewardObj->m_specialRewardItem), -amount);
 		} else {
 			FLAlertLayer::create("Error", "There was an error processing your reward.", "OK")->show();
-		}
-	}
-
-	void onlineRewardStatusFailed() {
-		auto code = geode::utils::string::toLower(geode::Mod::get()->getSettingValue<std::string>("code"));
-		
-		if (m_fields->text == code) {
-			auto sequence = CCSequence::create(
-				CCDelayTime::create(4),
-				CCCallFunc::create(this, callfunc_selector(CustomWraithCodes::show_success)),
-				CCDelayTime::create(1),
-				CCCallFunc::create(this, callfunc_selector(CustomWraithCodes::fade_loading)),
-				CCCallFunc::create(this, callfunc_selector(CustomWraithCodes::show_reward)),
-				nullptr
-			);
-
-			CCDirector::sharedDirector()->getRunningScene()->runAction(sequence);
-
-			this->m_wraithButton->setEnabled(true);
-		} else {
-			SecretLayer5::onlineRewardStatusFailed();
 		}
 	}
 };

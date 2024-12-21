@@ -1,5 +1,4 @@
 # 1.2.0
-- Multi-code support
 - Fix safe mode (previous one was buggy)
 - Fix anticheat bypass
 - Rewrite readme & about
