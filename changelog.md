@@ -1,6 +1,7 @@
 # 1.2.0
 - Fix safe mode (previous one was buggy)
 - Fix anticheat bypass
+- Fix spaces bug
 - Rewrite readme & about
 - Refactor
 
